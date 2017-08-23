@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import argparse, csv
 
 class Mappings:
     def __init__(self):
@@ -71,7 +72,7 @@ class Buyer(Participant):
                     if(len(self.current_engagements) == self.number_of_sellers):
                         self.mappings.remove_free(self)
                     return True
-        error("Couldn't find a seller for buyer %d" % self.ID)
+        raise Exception("Couldn't find a seller for buyer %d" % self.ID)
 
 
 def run(buyer_data, seller_data):
@@ -84,12 +85,12 @@ def run(buyer_data, seller_data):
 
     for buyer_idx, number_of_sellers, *ranked_seller_list in buyer_data:
         if(buyer_idx != last_buyer_idx + 1):
-            error("Incorrectly ordered buyers at %d" % buyer_idx)
+            raise Exception("Incorrectly ordered buyers at %d" % buyer_idx)
         if(seller_count == -1):
             seller_count = len(ranked_seller_list)
         else:
             if(seller_count != len(ranked_seller_list)):
-                error("Differing number of ranked sellers for buyer %d" % buyer_idx)
+                raise Exception("Differing number of ranked sellers for buyer %d" % buyer_idx)
 
         #The actual meat and potatoes
         new_buyer = Buyer(number_of_sellers, ranked_seller_list)
@@ -100,16 +101,16 @@ def run(buyer_data, seller_data):
         cumulative_sellers_needed += number_of_sellers
 
     if(cumulative_sellers_needed != seller_count):
-        error("Number of ranked sellers does not match cumulative number of needed sellers")
+        raise Exception("Number of ranked sellers does not match cumulative number of needed sellers")
     
     #for input checking
     last_seller_idx = -1
 
     for seller_idx, *ranked_buyer_list in seller_data:
         if(seller_idx != last_seller_idx + 1):
-            error("Incorrectly ordered sellers at %d" % seller_idx)
+            raise Exception("Incorrectly ordered sellers at %d" % seller_idx)
         if(last_buyer_idx+1 != len(ranked_buyer_list)):
-            error("Incorrect number of ranked buyers for seller %d" % seller_idx)
+            raise Exception("Incorrect number of ranked buyers for seller %d" % seller_idx)
 
         #The actual meat and potatoes
         new_seller = Seller(ranked_buyer_list)
@@ -118,18 +119,30 @@ def run(buyer_data, seller_data):
         last_seller_idx = seller_idx
 
     if(last_seller_idx+1 != cumulative_sellers_needed):
-        error("Number of sellers does not match the number needed by the buyers")
+        raise Exception("Number of sellers does not match the number needed by the buyers")
         
     mappings.stablematch()
 
     mappings.print()
-        
-#First test:
-run([[0, 2, 0, 1, 2, 3],
-     [1, 1, 1, 2, 3, 0],
-     [2, 1, 0, 3, 2, 1]],
-    [[0, 2, 1, 0],
-     [1, 2, 1, 0],
-     [2, 1, 2, 0],
-     [3, 0, 1, 2]])
-         
+
+if(__name__ == "__main__"):
+    parser = argparse.ArgumentParser(description='Stable Matching')
+    parser.add_argument('buyerdata',
+                    help='CSV file of buyer data')
+    parser.add_argument('sellerdata',
+                    help='CSV file of seller data')
+
+    args = parser.parse_args()
+
+    buyerdata,sellerdata = [],[]
+    with open(args.buyerdata) as f:
+        for row in csv.reader(f):
+            if(len(row) > 2):
+                buyerdata.append(map(int,row))
+    with open(args.sellerdata) as f:
+        for row in csv.reader(f):
+            if(len(row) > 2):
+                sellerdata.append(map(int,row))
+    run(buyerdata,sellerdata)
+
+    
