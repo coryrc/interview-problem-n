@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
+"""
+Information about license here.
+Copyright 2017 Cory Cross
+"""
 import argparse, csv
 
 class Mappings:
+    """
+    Master class coordinating Buyer and Seller objects to solve matching algorithm
+    """
     def __init__(self):
         self.sellers = []
         self.buyers = []
